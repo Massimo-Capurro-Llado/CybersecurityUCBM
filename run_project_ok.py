@@ -8,13 +8,12 @@ from topology_project import NetworkTopo
 from mininet.link import Intf
 
 
-
-
 def run():
     
     # STEP 1: Create the network using mininet
     topo = NetworkTopo()
     net = Mininet(topo=topo)
+    net.staticArp()
 
     # Add routing for reaching networks that aren't directly connected
     net['r1'].cmd('sysctl net.ipv4.ip_forward=1')
@@ -38,14 +37,36 @@ def run():
     net['r1'].cmd("iptables -A FORWARD -s 192.168.0.7 -d 10.0.0.4 -j ACCEPT")
     net['r1'].cmd("iptables -A FORWARD -d 10.0.0.4 -j DROP")
     
+    # STEP 3: Create an HTTP server on host6 
+    net['h6'].cmd("python -m http.server 80 &")
+    
+    # Protect h6, h7 from port scanning
+    net['r2'].cmd("iptables -A FORWARD -d 192.168.0.7,192.168.0.6 -p tcp --tcp-flags ALL SYN -j DROP")
+    net['r2'].cmd("iptables -A FORWARD -d 192.168.0.7,192.168.0.6  -p tcp --tcp-flags ALL FIN -j DROP")
+    net['r2'].cmd("iptables -A FORWARD -d 192.168.0.7,192.168.0.6  -p tcp --tcp-flags ALL NONE-j DROP")
+    net['r2'].cmd("iptables -A FORWARD -d 192.168.0.7,192.168.0.6  -p tcp --tcp-flags ALL URG,PSH,FIN -j DROP")
+    net['r2'].cmd("iptables -A FORWARD -d 192.168.0.7,192.168.0.6  -p tcp --tcp-flags ALL ACK -j DROP")
+    
+    # Protect h3 from port scanning
+    net['r2'].cmd("iptables -A FORWARD -d 10.0.0.3 -p tcp --tcp-flags ALL SYN -j DROP")
+    net['r2'].cmd("iptables -A FORWARD -d 10.0.0.3 -p tcp --tcp-flags ALL FIN -j DROP")
+    net['r2'].cmd("iptables -A FORWARD -d 10.0.0.3 -p tcp --tcp-flags ALL NONE-j DROP")
+    net['r2'].cmd("iptables -A FORWARD -d 10.0.0.3 -p tcp --tcp-flags ALL URG,PSH,FIN -j DROP")
+    net['r2'].cmd("iptables -A FORWARD -d 10.0.0.3 -p tcp --tcp-flags ALL ACK -j DROP")
+    
     # STEP 4: Open ports 25, 43 and 502 on host7
     net['h7'].cmd("python3 port.py 25 &")
     net['h7'].cmd("python3 port.py 43 &")
     net['h7'].cmd("python3 port.py 502 &")
     
-    # STEP 5: Create an HTTP server on host6 
-    net['h6'].cmd("python3 http.server 8000 &")
+    # STEP a-b: Execute server and client files on hosts 3 and 2
+    net['h3'].cmd("python3 server.py &")
+    net['h2'].cmd("python3 client.py &")
     
+    # Deactivate ipv6 ips
+    net['ips'].cmd('sysctl -w net.ipv6.conf.all.disable_ipv6=1')
+    net['ips'].cmd('sysctl -w net.ipv6.conf.default.disable_ipv6=1')
+    net['ips'].cmd('sysctl -w net.ipv6.conf.lo.disable_ipv6=1')
     
     net.start()
     CLI(net)

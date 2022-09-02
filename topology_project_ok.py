@@ -18,6 +18,9 @@ class NetworkTopo(Topo):
         s2 = self.addSwitch('s2')
         s3 = self.addSwitch('s3')
         
+        # Add ips
+        ips = self.addHost('ips', ip = '0,0,0,0', netmask = '0,0,0,0')
+        
         # Add host-switch links in the same subnet
         self.addLink(s1, r1)
 
@@ -39,8 +42,9 @@ class NetworkTopo(Topo):
                      intfName2='r3-eth2',
                      params1={'ip': '10.0.3.1/24'},
                      params2={'ip': '10.0.3.2/24'})
-                     
-        # Adding hosts specifying the default route
+        
+        
+         # Adding hosts specifying the default route
         h1 = self.addHost(name='h1',
                           ip='10.0.0.5/24',
                           defaultRoute='via 10.0.0.1')
@@ -70,8 +74,7 @@ class NetworkTopo(Topo):
                           defaultRoute='via 10.0.1.1')
         h10 = self.addHost(name='h10',
                           ip='10.0.1.2/24',
-                          defaultRoute='via 10.0.1.1')
-        
+                          defaultRoute='via 10.0.1.1')      
 
         # Add host-switch links
         self.addLink(h1, s1)
@@ -79,9 +82,13 @@ class NetworkTopo(Topo):
         self.addLink(h3, s1)
         self.addLink(h4, s1)
         self.addLink(h5, s2)
-        self.addLink(h6, s2)
         self.addLink(h7, s2)
         self.addLink(h8, s3)
         self.addLink(h9, s3)
-        self.addLink(h10, s3)
+        self.addLink(h10,s3)
+        
+         # Add ips links
+        self.addLink(s2, ips)
+        self.addLink(h6, ips)
+        
 
